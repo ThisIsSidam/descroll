@@ -33,7 +33,7 @@ import de.scroll.app.ui.components.GithubIcon
 import de.scroll.app.ui.components.HomeHeadline
 import de.scroll.app.ui.components.RestrictionsCard
 import de.scroll.app.ui.components.ServiceButton
-import de.scroll.app.ui.components.TogglePlatformsSection
+import de.scroll.app.ui.components.PlatformsSection
 
 @Composable
 fun HomeScreen() {
@@ -81,7 +81,7 @@ fun HomeScreen() {
                 RestrictionsCard()
             }
             if (isServiceEnabled) {
-                TogglePlatformsSection(
+                PlatformsSection(
                     context.getSharedPreferences(
                         "de.scroll.app",
                         MODE_PRIVATE

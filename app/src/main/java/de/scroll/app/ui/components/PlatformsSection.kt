@@ -15,7 +15,7 @@ import de.scroll.app.R
 import androidx.core.content.edit
 
 @Composable
-fun TogglePlatformsSection(preferences: SharedPreferences) {
+fun PlatformsSection(preferences: SharedPreferences) {
     val ytAllowed : Boolean = preferences.getBoolean("yt_allowed", true)
     val instaAllowed : Boolean = preferences.getBoolean("insta_allowed", true)
     var ytEnabled by remember { mutableStateOf(ytAllowed) }
@@ -24,7 +24,7 @@ fun TogglePlatformsSection(preferences: SharedPreferences) {
     Column(modifier = Modifier) {
         Spacer(modifier = Modifier.height(16.dp))
 
-        PlatformToggleCard(
+        PlatformCard(
             iconRes = R.drawable.ic_youtube,
             label = "Youtube Shorts",
             isChecked = ytEnabled,
@@ -34,7 +34,7 @@ fun TogglePlatformsSection(preferences: SharedPreferences) {
             }
         )
 
-        PlatformToggleCard(
+        PlatformCard(
             iconRes = R.drawable.ic_instagram,
             label = "Instagram Reels",
             isChecked = instaEnabled,

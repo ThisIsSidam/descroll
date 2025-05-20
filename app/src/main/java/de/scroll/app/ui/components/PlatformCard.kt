@@ -12,7 +12,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun PlatformToggleCard(
+fun PlatformCard(
     iconRes: Int,
     label: String,
     isChecked: Boolean,
