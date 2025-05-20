@@ -31,7 +31,7 @@ import de.scroll.app.core.services.ScrollGuardService
 import de.scroll.app.ui.components.AppVersionText
 import de.scroll.app.ui.components.GithubIcon
 import de.scroll.app.ui.components.HomeHeadline
-import de.scroll.app.ui.components.OptionsCard
+import de.scroll.app.ui.components.RestrictionsCard
 import de.scroll.app.ui.components.ServiceButton
 import de.scroll.app.ui.components.TogglePlatformsSection
 
@@ -78,7 +78,7 @@ fun HomeScreen() {
             Spacer(modifier = Modifier.weight(1f))
 
             if (isServiceEnabled) {
-                OptionsCard()
+                RestrictionsCard()
             }
             if (isServiceEnabled) {
                 TogglePlatformsSection(
