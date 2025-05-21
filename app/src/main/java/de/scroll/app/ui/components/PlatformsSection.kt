@@ -27,21 +27,11 @@ fun PlatformsSection(preferences: SharedPreferences) {
         PlatformCard(
             iconRes = R.drawable.ic_youtube,
             label = "Youtube Shorts",
-            isChecked = ytEnabled,
-            onCheckedChange = {
-                ytEnabled = it
-                preferences.edit { putBoolean("yt_allowed", ytEnabled) }
-            }
         )
 
         PlatformCard(
             iconRes = R.drawable.ic_instagram,
             label = "Instagram Reels",
-            isChecked = instaEnabled,
-            onCheckedChange = {
-                instaEnabled = it
-                preferences.edit { putBoolean("insta_allowed", instaEnabled) }
-            }
         )
     }
 }
