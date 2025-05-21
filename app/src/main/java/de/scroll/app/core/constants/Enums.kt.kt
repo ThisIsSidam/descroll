@@ -34,3 +34,16 @@ enum class PlatformRestriction(val id: Int, val title: String, val iconCode: Int
         }
     }
 }
+
+enum class Platform(val id: Int, val label: String, val iconRes: Int) {
+    YOUTUBE_SHORTS(
+        1,
+        "Youtube Shorts",
+        R.drawable.ic_youtube
+    ),
+    INSTAGRAM_REELS(
+        2,
+        "Instagram Reels",
+        R.drawable.ic_instagram
+    )
+}

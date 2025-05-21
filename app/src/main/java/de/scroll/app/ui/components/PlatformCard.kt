@@ -1,5 +1,7 @@
 package de.scroll.app.ui.components
 
+import android.util.Log
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -22,15 +24,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import de.scroll.app.core.constants.PlatformRestriction
 import de.scroll.app.R
+import de.scroll.app.core.constants.Platform
 
-@Preview
 @Composable
 fun PlatformCard(
-    iconRes: Int = R.drawable.ic_youtube,
-    label: String = "Youtube",
+    platform: Platform,
+    isExpanded: Boolean = false,
+    onTapOutside: () -> Unit
 ) {
     Card(
         modifier = Modifier
+            .clickable {
+                onTapOutside()
+            }
+            .animateContentSize()
             .fillMaxWidth()
             .padding(horizontal = 32.dp, vertical = 6.dp),
         colors = CardDefaults.cardColors(
@@ -48,18 +55,26 @@ fun PlatformCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Image(
-                    painter = painterResource(id = iconRes),
-                    contentDescription = label,
+                    painter = painterResource(id = platform.iconRes),
+                    contentDescription = platform.label,
                     modifier = Modifier.size(36.dp)
                 )
                 Spacer(modifier = Modifier.width(12.dp))
-                Text(text = label, fontSize = 16.sp, color = MaterialTheme.colorScheme.onBackground)
-
+                Text(text = platform.label, fontSize = 16.sp, color = MaterialTheme.colorScheme.onBackground)
                 Spacer(modifier = Modifier.weight(1f))
+                if (!isExpanded) {
+                    Icon(
+                        painter = painterResource(R.drawable.block),
+                        contentDescription = null,
+                        modifier = Modifier.size(30.dp)
+                    )
+                }
             }
-            Spacer(modifier = Modifier.size(12.dp))
-            RestrictionPanel()
-            Spacer(modifier = Modifier.size(12.dp))
+            if (isExpanded) {
+                Spacer(modifier = Modifier.size(12.dp))
+                RestrictionPanel()
+                Spacer(modifier = Modifier.size(12.dp))
+            }
         }
     }
 }
