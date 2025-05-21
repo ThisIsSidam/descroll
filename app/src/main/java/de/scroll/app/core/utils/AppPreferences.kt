@@ -3,6 +3,7 @@ package app.wa.automate.core.utils
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
+import de.scroll.app.core.constants.Platform
 import de.scroll.app.core.constants.PlatformRestriction
 
 object AppPreferences {
@@ -13,14 +14,16 @@ object AppPreferences {
     }
 
     fun getPlatformRestriction(
-        key: String,
+        platform: Platform,
         defaultValue: PlatformRestriction = PlatformRestriction.NONE
     ): PlatformRestriction {
+        val key = platform.id.toString()
         val value = prefs.getInt(key, defaultValue.id)
         return PlatformRestriction.fromId(value)
     }
 
-    fun setPlatformRestriction(key: String, value: PlatformRestriction) {
-        prefs.edit { putInt(key, value.id) }
+    fun setPlatformRestriction(platform: Platform, restriction: PlatformRestriction) {
+        val key = platform.id.toString()
+        prefs.edit { putInt(key, restriction.id) }
     }
 }
