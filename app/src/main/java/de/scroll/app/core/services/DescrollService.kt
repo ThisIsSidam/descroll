@@ -5,8 +5,12 @@ import android.content.SharedPreferences
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import app.wa.automate.core.utils.AppPreferences
+import de.scroll.app.core.constants.Platform
+import de.scroll.app.core.constants.PlatformRestriction
 import de.scroll.app.core.exceptions.Failure
 import de.scroll.app.core.extensions.toast
+import kotlin.collections.isNotEmpty
 
 class DescrollService : AccessibilityService() {
 
@@ -14,22 +18,63 @@ class DescrollService : AccessibilityService() {
         if (event == null) return
         val type = event.eventType
 
-        if (type != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED &&
-            type != AccessibilityEvent.TYPE_VIEW_SELECTED &&
-            type != AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
-            return
+        if (type == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED ||
+            type == AccessibilityEvent.TYPE_VIEW_SELECTED ||
+            type == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
+        ) {
+            blockContent(event.packageName?.toString())
         }
 
-        try {
-            val preferences : SharedPreferences = getSharedPreferences("de.scroll.app", MODE_PRIVATE)
-            val ytAllowed : Boolean = preferences.getBoolean("yt_allowed", true)
-            val instaAllowed : Boolean = preferences.getBoolean("insta_allowed", true)
-            val packageName = event.packageName?.toString()
+        if (type == AccessibilityEvent.TYPE_VIEW_SCROLLED) {
+            Log.d("NoScrollService", "Scrolling detected")
+            blockFurtherScrolling(event)
+        }
+    }
 
-            if (packageName == "com.google.android.youtube" && ytAllowed) {
+    private fun blockContent(packageName: String?) {
+        try {
+            val restrictions : Map<Platform, PlatformRestriction> = AppPreferences.getAllRestrictions()
+
+            if (
+                packageName == "com.google.android.youtube" &&
+                restrictions[Platform.YOUTUBE_SHORTS] == PlatformRestriction.BLOCK
+            ) {
                 blockShorts()
-            } else if (packageName == "com.instagram.android" && instaAllowed) {
+            } else if (
+                packageName == "com.instagram.android" &&
+                restrictions[Platform.INSTAGRAM_REELS] == PlatformRestriction.BLOCK
+            ) {
                 blockReels()
+            }
+        } catch (e: Exception) {
+            if (e is Failure && e.showToast) {
+                toast(message = e.message.toString())
+            }
+            Log.e("NoScrollService", "Failure: ${e.message}")
+        }
+    }
+
+    private fun blockFurtherScrolling(event: AccessibilityEvent) {
+        try {
+            val node = event.source
+            if (node == null) {
+                throw Failure("Node is null")
+            } else {
+                val restrictions : Map<Platform, PlatformRestriction> = AppPreferences.getAllRestrictions()
+                val scrollable = node.isScrollable
+                if (!scrollable) return
+
+                if (
+                    packageName == "com.google.android.youtube" &&
+                    restrictions[Platform.YOUTUBE_SHORTS] == PlatformRestriction.PARTIAL_BLOCK
+                ) {
+                    moveToYtHome(node)
+                } else if (
+                    packageName == "com.instagram.android" &&
+                    restrictions[Platform.INSTAGRAM_REELS] == PlatformRestriction.PARTIAL_BLOCK
+                ) {
+                    moveToInstaHome(node)
+                }
             }
         } catch (e: Exception) {
             if (e is Failure && e.showToast) {
@@ -62,12 +107,7 @@ class DescrollService : AccessibilityService() {
                 overlayNode != null && overlayNode.isNotEmpty() &&
                 barNode != null && barNode.isNotEmpty()
             ){
-                val homeButton = rootNode.findAccessibilityNodeInfosByText("Home")
-                if (homeButton.isNotEmpty()) {
-                    tapChildOrParent(homeButton[0])
-                } else {
-                    throw Failure("Home button not found", true)
-                }
+                moveToYtHome(rootNode)
             }
         }
     }
@@ -86,13 +126,26 @@ class DescrollService : AccessibilityService() {
                 infoNode != null && infoNode.isNotEmpty() &&
                 overlayNode != null && overlayNode.isNotEmpty()
             ) {
-                val homeButton = rootNode.findAccessibilityNodeInfosByViewId("com.instagram.android:id/feed_tab")
-                if (homeButton != null && homeButton.isNotEmpty()) {
-                    tapChildOrParent(homeButton[0])
-                } else {
-                    throw Failure("Home button not found", true)
-                }
+                moveToInstaHome(rootNode)
             }
+        }
+    }
+
+    private fun moveToInstaHome(rootNode: AccessibilityNodeInfo) {
+        val homeButton = rootNode.findAccessibilityNodeInfosByViewId("com.instagram.android:id/feed_tab")
+        if (homeButton != null && homeButton.isNotEmpty()) {
+            tapChildOrParent(homeButton[0])
+        } else {
+            throw Failure("Home button not found", true)
+        }
+    }
+
+    private fun moveToYtHome(rootNode: AccessibilityNodeInfo) {
+        val homeButton = rootNode.findAccessibilityNodeInfosByText("Home")
+        if (homeButton.isNotEmpty()) {
+            tapChildOrParent(homeButton[0])
+        } else {
+            throw Failure("Home button not found", true)
         }
     }
 
@@ -100,3 +153,4 @@ class DescrollService : AccessibilityService() {
         // Handle service interruption (e.g. when disabled)
     }
 }
+// TODO: Check best practices in all this

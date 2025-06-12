@@ -26,4 +26,10 @@ object AppPreferences {
         val key = platform.id.toString()
         prefs.edit { putInt(key, restriction.id) }
     }
+
+    fun getAllRestrictions() : Map<Platform, PlatformRestriction> {
+        return Platform.entries.associate { platform ->
+            platform to getPlatformRestriction(platform)
+        }
+    }
 }
