@@ -15,11 +15,11 @@ enum class PlatformRestriction(val id: Int, val title: String, val iconCode: Int
         R.drawable.block,
         "Feature is blocked, moved to home if clicked"
     ),
-    PARTIAL_BLOCK(
+    PAUSE(
         303,
-        "Partially blocked",
-        R.drawable.repeat_one,
-        "Lets you see a single shorts, stops you from scrolling"
+        "Pause",
+        R.drawable.outline_autopause_24,
+        "Lets you watch the content for a short amount of time every couple hours. You can set both timers."
     )
     ;
 
