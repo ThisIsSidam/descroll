@@ -1,19 +1,23 @@
 package de.scroll.app.core.services
 
 import android.accessibilityservice.AccessibilityService
-import android.content.SharedPreferences
+import android.os.Build
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import androidx.annotation.RequiresApi
 import app.wa.automate.core.utils.AppPreferences
 import de.scroll.app.core.constants.Platform
 import de.scroll.app.core.constants.PlatformRestriction
 import de.scroll.app.core.exceptions.Failure
 import de.scroll.app.core.extensions.toast
+import java.time.Instant
 import kotlin.collections.isNotEmpty
+import kotlin.time.Duration
 
 class DescrollService : AccessibilityService() {
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
         val type = event.eventType
@@ -24,63 +28,70 @@ class DescrollService : AccessibilityService() {
         ) {
             blockContent(event.packageName?.toString())
         }
-
-        if (type == AccessibilityEvent.TYPE_VIEW_SCROLLED) {
-            Log.d("NoScrollService", "Scrolling detected")
-            blockFurtherScrolling(event)
-        }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun blockContent(packageName: String?) {
         try {
-            val restrictions : Map<Platform, PlatformRestriction> = AppPreferences.getAllRestrictions()
+            val restrictions: Map<Platform, PlatformRestriction> = AppPreferences.getAllRestrictions()
 
-            if (
-                packageName == "com.google.android.youtube" &&
-                restrictions[Platform.YOUTUBE_SHORTS] == PlatformRestriction.BLOCK
-            ) {
-                blockShorts()
+            if (packageName == "com.google.android.youtube") {
+                if (restrictions[Platform.YOUTUBE_SHORTS] == PlatformRestriction.PAUSE) {
+                    if (!shouldPause()) {
+                        blockShorts()
+                    }
+                }
             } else if (
                 packageName == "com.instagram.android" &&
                 restrictions[Platform.INSTAGRAM_REELS] == PlatformRestriction.BLOCK
             ) {
-                blockReels()
-            }
-        } catch (e: Exception) {
-            if (e is Failure && e.showToast) {
-                toast(message = e.message.toString())
-            }
-            Log.e("NoScrollService", "Failure: ${e.message}")
-        }
-    }
-
-    private fun blockFurtherScrolling(event: AccessibilityEvent) {
-        try {
-            val node = event.source
-            if (node == null) {
-                throw Failure("Node is null")
-            } else {
-                val restrictions : Map<Platform, PlatformRestriction> = AppPreferences.getAllRestrictions()
-                val scrollable = node.isScrollable
-                if (!scrollable) return
-
-                if (
-                    packageName == "com.google.android.youtube" &&
-                    restrictions[Platform.YOUTUBE_SHORTS] == PlatformRestriction.PARTIAL_BLOCK
-                ) {
-                    moveToYtHome(node)
-                } else if (
-                    packageName == "com.instagram.android" &&
-                    restrictions[Platform.INSTAGRAM_REELS] == PlatformRestriction.PARTIAL_BLOCK
-                ) {
-                    moveToInstaHome(node)
+                if (restrictions[Platform.YOUTUBE_SHORTS] == PlatformRestriction.PAUSE) {
+                    if (!shouldPause()) {
+                        blockReels()
+                    }
                 }
             }
         } catch (e: Exception) {
             if (e is Failure && e.showToast) {
                 toast(message = e.message.toString())
             }
-            Log.e("NoScrollService", "Failure: ${e.message}")
+            Log.e("NoScrollService", "Failure: ${e.message}", e)
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun shouldPause(): Boolean {
+        val now = Instant.now()
+
+        val nextPauseTimeMillis = AppPreferences.getNextPauseTime()
+        val pauseDurationMillis = AppPreferences.getPauseDuration() * 60 * 1000L
+        val cooldownMillis = AppPreferences.getPauseCooldown() * 60 * 1000L
+
+        // Case 1: No pause scheduled yet → allow pause, and set nextPauseTime
+        if (nextPauseTimeMillis == null) {
+            val newNextPauseTime = now.plusMillis(pauseDurationMillis + cooldownMillis)
+            AppPreferences.setNextPauseTime(newNextPauseTime.toEpochMilli())
+            Log.d("NoScrollService", "Set new nextPauseTime: ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(java.util.Date(newNextPauseTime.toEpochMilli()))}")
+            return true
+        }
+
+        val nextPauseTime = Instant.ofEpochMilli(nextPauseTimeMillis)
+        val pauseWindowEnd = nextPauseTime.plusMillis(pauseDurationMillis)
+
+        return when {
+            // Not yet in the pause window
+            now.isBefore(nextPauseTime) -> false
+
+            // Inside the pause window
+            now.isBefore(pauseWindowEnd) -> true
+
+            // After pause window ends → set new nextPauseTime and deny access now
+            else -> {
+                val newNextPauseTime = now.plusMillis(pauseDurationMillis + cooldownMillis)
+                AppPreferences.setNextPauseTime(newNextPauseTime.toEpochMilli())
+                Log.d("NoScrollService", "Set new nextPauseTime: ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(java.util.Date(newNextPauseTime.toEpochMilli()))}")
+                false
+            }
         }
     }
 
